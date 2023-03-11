@@ -1,0 +1,127 @@
+---
+title: "Collagen and related proteins list for Nordic"
+output: html_notebook
+---
+
+Load required packages.
+```{r}
+library(devtools)
+mypackages <- c("ggplot2", "tidyverse")
+lapply(mypackages, require, character.only = TRUE)
+library(SomaDataIO)
+```
+
+Read in data and check format.
+```{r}
+file <- "~/Desktop/DRG/Proteomics/10_28_22_Merged_With_Legend_SS-2216784_v4.1_EDTAPlasma.hybNorm.medNormInt.plateScale.calibration.anmlQC.qcCheck.anmlSMP.adat"
+adat <- read_adat(file)
+is.soma_adat(adat)
+adat
+```
+
+The first part of this notebook is assessing other collagen entities.
+
+Subset df to only desired columns and rename to Entrez gene ID for ease of discrimination.
+```{r}
+collagen_list <- c('seq.11140.56',
+'seq.13484.69',
+'seq.15466.30',
+'seq.6631.17',
+'seq.22047.46',
+'seq.11150.3',
+'seq.16828.8',
+'seq.4807.13',
+'seq.15653.9',
+'seq.6570.1',
+'seq.8974.172',
+'seq.8804.39',
+'seq.4543.65',
+'seq.7006.4',
+'seq.10702.1',
+'seq.16753.46',
+'seq.11278.4',
+'seq.20175.17',
+'seq.11196.31',
+'seq.10511.10',
+'seq.11155.16',
+'seq.15467.10',
+'seq.6236.51',
+'seq.15569.15',
+'seq.18880.81')
+
+collagen_names <- c('COL1A1.1',
+'COL1A1.2',
+'COL9A1.1',
+'COL9A1.2',
+'COL5A1',
+'COL6A1.1',
+'COL6A1.2',
+'COL8A1',
+'COL10A1',
+'COL13A1',
+'COL15A1',
+'COL20A1',
+'COL23A1',
+'COL25A1',
+'COL28A1',
+'COL6A2',
+'COL11A2',
+'COL9A3',
+'COL6A3.1',
+'COL6A3.2',
+'COL6A5',
+'CTHRC1.1',
+'CTHRC1.2',
+'COL2A1',
+'COL3A1')
+
+sub_adat <- adat %>% select('Cohort', all_of(collagen_list))
+sub_adat <- sub_adat %>% rename_at(vars(collagen_list), ~ collagen_names)
+sub_adat
+```
+Perform t-tests between Control and Dupuytren conditions for each protein.
+```{r}
+Cohort <- sub_adat$Cohort
+res <- sub_adat %>% 
+  select_if(is.numeric) %>%
+  map_df(~ broom::tidy(t.test(. ~ Cohort)$p.value), .id = 'Protein')
+res %>% rename('p-value' = 'x')
+```
+
+Loop over df and visualize data.
+```{r}
+for(i in collagen_names) {
+  print(ggplot(sub_adat, aes(x=Cohort)) + geom_boxplot(aes_string(y= i)))
+}
+```
+
+The final part of this notebook is assessing other collagen related and modifying proteins (among some other collagen proteins as well).
+
+Subset df to only desired columns and rename to Entrez gene ID for ease of discrimination.
+```{r}
+protein_list <- c("seq.10479.18", "seq.10511.10","seq.10612.18", "seq.10800.15","seq.11150.3","seq.11196.31","seq.11237.49","seq.11348.132","seq.11645.9","seq.13535.2","seq.13950.9"  ,"seq.15466.30","seq.15569.15","seq.16753.46","seq.16828.8","seq.18875.125","seq.18880.81","seq.20175.17","seq.2201.17","seq.22047.46","seq.2579.17","seq.2788.55"  ,"seq.2789.26","seq.2954.56","seq.3348.49","seq.4160.49","seq.4496.60","seq.4543.65","seq.4924.32","seq.4925.54","seq.5002.76","seq.5638.23","seq.6273.58",
+"seq.6383.90","seq.6570.1","seq.6631.17","seq.8475.15","seq.8479.4" ,"seq.8845.2" ,"seq.9172.69")
+
+protein_names <- c("MMP10_1","COL6A3_1","PLOD3","SERPINH1","COL6A1_1","COL6A3_2","PCOLCE","P4HA2","P4HA1","CERT1_1","CERT1_2","COL9A1_1","COL2A1_1","COL6A2","COL6A1_2","COL2A1_2","COL3A1","COL9A3","COL18A1","COL5A1","MMP9","MMP3","MMP7_1","MMP8_1","BMP1","MMP2","MMP12","COL23A1","MMP1","MMP13",
+"MMP14","COLGALT1","P3H1","TLL1","COL13A1","COL9A1_2","MMP7_2","MMP10_2","ADAMTS3","MMP8_2")
+
+sub_adat2 <- adat %>% select('Cohort', all_of(protein_list))
+sub_adat2 <- sub_adat2 %>% rename_at(vars(protein_list), ~ protein_names)
+sub_adat2
+```
+
+Perform t-tests between Control and Dupuytren conditions for each protein.
+```{r}
+Cohort <- sub_adat2$Cohort
+res <- sub_adat2 %>% 
+  select_if(is.numeric) %>%
+  map_df(~ broom::tidy(t.test(. ~ Cohort)$p.value), .id = 'Protein')
+res %>% rename('p-value' = 'x')
+```
+
+Loop over df and visualize data.
+```{r}
+for(i in protein_names) {
+  print(ggplot(sub_adat2, aes(x=Cohort)) + geom_boxplot(aes_string(y= i)))
+}
+```
